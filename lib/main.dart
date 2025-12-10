@@ -1013,6 +1013,8 @@ class _AboutContent extends StatelessWidget {
     "Riverpod",
     "sqflite",
     "Hive",
+    "Figma",
+    "Cursor",
     "Firebase",
     "REST API",
     "Git / GitHub",
@@ -1235,9 +1237,9 @@ class _AboutContent extends StatelessWidget {
           children: techItems
               .asMap()
               .entries
-              .map((entry) => _buildTechChip(
-            entry.value,
-            entry.key * 50,
+              .map((entry) => _TechChip(
+            text: entry.value,
+            delay: entry.key * 50,
             isMobile: isMobile,
             isLandscape: isLandscape,
             screenWidth: screenWidth,
@@ -1247,40 +1249,63 @@ class _AboutContent extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildTechChip(
-      String text,
-      int delay, {
-        required bool isMobile,
-        required bool isLandscape,
-        required double screenWidth,
-      }) {
-    return TweenAnimationBuilder<double>(
-      duration: Duration(milliseconds: 300 + delay),
-      tween: Tween(begin: 0.0, end: 1.0),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.scale(
-            scale: 0.8 + (value * 0.2),
-            child: child,
-          ),
-        );
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? (isLandscape ? 10 : 12) : 14,
-          vertical: isMobile ? (isLandscape ? 6 : 8) : 9,
+class _TechChip extends StatefulWidget {
+  final String text;
+  final int delay;
+  final bool isMobile;
+  final bool isLandscape;
+  final double screenWidth;
+
+  const _TechChip({
+    required this.text,
+    required this.delay,
+    required this.isMobile,
+    required this.isLandscape,
+    required this.screenWidth,
+  });
+
+  @override
+  State<_TechChip> createState() => _TechChipState();
+}
+
+class _TechChipState extends State<_TechChip> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        margin: EdgeInsets.only(
+          top: _isHovered ? 0 : 2,
+          bottom: _isHovered ? 2 : 0,
         ),
+        transform: Matrix4.identity()..scale(_isHovered ? 1.08 : 1.0),
         decoration: BoxDecoration(
-          color: Color(0xFF1A1F3A).withOpacity(0.6),
+          color: Color(0xFF1A1F3A).withOpacity(_isHovered ? 0.8 : 0.6),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Color(0xFFF86E5B).withOpacity(0.2),
-            width: 1,
+            color: _isHovered
+                ? Color(0xFFF86E5B)
+                : Color(0xFFF86E5B).withOpacity(0.2),
+            width: _isHovered ? 1.5 : 1,
           ),
-          boxShadow: [
+          boxShadow: _isHovered
+              ? [
+            BoxShadow(
+              color: Color(0xFFF86E5B).withOpacity(0.3),
+              blurRadius: 12,
+              spreadRadius: 1,
+              offset: Offset(0, 4),
+            ),
+          ]
+              : [
             BoxShadow(
               color: Color(0xFFF86E5B).withOpacity(0.1),
               blurRadius: 4,
@@ -1288,37 +1313,75 @@ class _AboutContent extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: isMobile ? (isLandscape ? 5 : 6) : 6,
-              height: isMobile ? (isLandscape ? 5 : 6) : 6,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFF86E5B),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0xFFF86E5B).withOpacity(0.5),
-                    blurRadius: 4,
-                    spreadRadius: 1,
+        child: TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 300 + widget.delay),
+          tween: Tween(begin: 0.0, end: 1.0),
+          curve: Curves.easeOut,
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.scale(
+                scale: 0.8 + (value * 0.2),
+                child: child,
+              ),
+            );
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.isMobile
+                  ? (widget.isLandscape ? 10 : 12)
+                  : 14,
+              vertical: widget.isMobile
+                  ? (widget.isLandscape ? 6 : 8)
+                  : 9,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  width: widget.isMobile
+                      ? (widget.isLandscape ? 5 : 6)
+                      : 6,
+                  height: widget.isMobile
+                      ? (widget.isLandscape ? 5 : 6)
+                      : 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFF86E5B),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFFF86E5B).withOpacity(
+                            _isHovered ? 0.8 : 0.5
+                        ),
+                        blurRadius: _isHovered ? 8 : 4,
+                        spreadRadius: _isHovered ? 2 : 1,
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                SizedBox(width: widget.isMobile
+                    ? (widget.isLandscape ? 6 : 8)
+                    : 8),
+                Text(
+                  widget.text,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: widget.isMobile
+                        ? (widget.isLandscape
+                        ? widget.screenWidth * 0.024
+                        : widget.screenWidth * 0.03)
+                        : 14,
+                    fontWeight: _isHovered
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                    letterSpacing: _isHovered ? 0.4 : 0.2,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: isMobile ? (isLandscape ? 6 : 8) : 8),
-            Text(
-              text,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: isMobile
-                    ? (isLandscape ? screenWidth * 0.024 : screenWidth * 0.03)
-                    : 14,
-                fontWeight: FontWeight.w400,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1544,10 +1607,10 @@ class _ProjectsContent extends StatelessWidget {
                 isLandscape: isLandscape,
               ),
               _ProjectCard(
-                title: 'Expense Tracker',
-                description: 'Track daily expenses with charts & filters',
-                imageUrl: 'assets/expenzo_project.png',
-                tags: ['Flutter'],
+                title: 'Rivio',
+                description: 'Track daily routines with charts & filters',
+                imageUrl: 'images/R2.png',
+                tags: ['Flutter', 'Figma', 'Firebase'],
                 isLandscape: isLandscape,
               ),
               _ProjectCard(
