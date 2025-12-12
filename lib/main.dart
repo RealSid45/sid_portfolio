@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 void main() {
   runApp(PortfolioApp());
@@ -54,6 +61,10 @@ class _PortfolioPageState extends State<PortfolioPage>
   static Duration _fastDuration = Duration(milliseconds: 300);
   static Duration _mediumDuration = Duration(milliseconds: 500);
   static Curve _defaultCurve = Curves.easeOut;
+
+  // Resume download variables
+  bool _isDownloading = false;
+  double _downloadProgress = 0.0;
 
   @override
   void initState() {
@@ -112,6 +123,124 @@ class _PortfolioPageState extends State<PortfolioPage>
         _isProjectsVisible = projectsVisible;
         _isContactsVisible = contactsVisible;
       });
+    }
+  }
+
+  // Resume Download Function
+  Future<void> _downloadResume() async {
+    // Google Drive direct download URL with your file ID
+    const String resumeUrl =
+        'https://drive.google.com/uc?export=download&id=1KsqWJP79JUd6onGtry21Ne1MNrVD37JA';
+    const String googleDriveFileId = '1KsqWJP79JUd6onGtry21Ne1MNrVD37JA';
+
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0.0;
+    });
+
+    try {
+      // For web platform - open in new tab
+      if (kIsWeb) {
+        final url = Uri.parse(
+            'https://drive.google.com/file/d/$googleDriveFileId/view?usp=sharing');
+        if (await canLaunchUrl(url)) {
+          await launchUrl(
+            url,
+            mode: LaunchMode.externalApplication,
+          );
+          setState(() {
+            _isDownloading = false;
+          });
+          return;
+        }
+      }
+
+      // For mobile platforms - download file
+      // Request storage permission for Android
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.request();
+        if (!status.isGranted) {
+          _showSnackBar('Storage permission required to download resume',
+              isError: true);
+          setState(() {
+            _isDownloading = false;
+          });
+          return;
+        }
+      }
+
+      // Get download directory
+      Directory directory;
+      if (Platform.isAndroid) {
+        directory = Directory('/storage/emulated/0/Download');
+        if (!await directory.exists()) {
+          directory =
+              await getExternalStorageDirectory() ?? await getTemporaryDirectory();
+        }
+      } else if (Platform.isIOS) {
+        directory = await getApplicationDocumentsDirectory();
+      } else {
+        directory =
+            await getDownloadsDirectory() ?? await getTemporaryDirectory();
+      }
+
+      // Define file path
+      final fileName = 'Sidharth_Biju_Resume.pdf';
+      final filePath = '${directory.path}/$fileName';
+
+      // Download using Dio with progress tracking
+      final dio = Dio();
+      await dio.download(
+        resumeUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            setState(() {
+              _downloadProgress = received / total;
+            });
+          }
+        },
+        deleteOnError: true,
+      );
+
+      setState(() {
+        _isDownloading = false;
+        _downloadProgress = 1.0;
+      });
+
+      _showSnackBar('Resume downloaded successfully! Check your Downloads folder.',
+          isError: false);
+
+      // Optionally open the file
+      if (Platform.isAndroid || Platform.isIOS) {
+        try {
+          await launchUrl(
+            Uri.file(filePath),
+            mode: LaunchMode.externalApplication,
+          );
+        } catch (e) {
+          print('Could not open file: $e');
+        }
+      }
+
+    } catch (e) {
+      print('Error downloading resume: $e');
+      setState(() {
+        _isDownloading = false;
+      });
+
+      // Fallback: open in browser
+      final fallbackUrl = Uri.parse(
+          'https://drive.google.com/file/d/$googleDriveFileId/view?usp=sharing');
+      if (await canLaunchUrl(fallbackUrl)) {
+        await launchUrl(
+          fallbackUrl,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        _showSnackBar('Failed to download resume. Please check your internet connection.',
+            isError: true);
+      }
     }
   }
 
@@ -344,6 +473,9 @@ class _PortfolioPageState extends State<PortfolioPage>
                   opacity: _fadeAnimation,
                   child: _HeroContent(
                     onProjectTap: () => _scrollToFraction(1.0),
+                    onResumeTap: _downloadResume,
+                    isDownloading: _isDownloading,
+                    downloadProgress: _downloadProgress,
                     isMobile: true,
                     isLandscape: true,
                     screenWidth: screenWidth,
@@ -372,6 +504,9 @@ class _PortfolioPageState extends State<PortfolioPage>
                 opacity: _fadeAnimation,
                 child: _HeroContent(
                   onProjectTap: () => _scrollToFraction(1.0),
+                  onResumeTap: _downloadResume,
+                  isDownloading: _isDownloading,
+                  downloadProgress: _downloadProgress,
                   isMobile: true,
                   isLandscape: false,
                   screenWidth: screenWidth,
@@ -398,6 +533,9 @@ class _PortfolioPageState extends State<PortfolioPage>
                   opacity: _fadeAnimation,
                   child: _HeroContent(
                     onProjectTap: () => _scrollToFraction(1.0),
+                    onResumeTap: _downloadResume,
+                    isDownloading: _isDownloading,
+                    downloadProgress: _downloadProgress,
                     isMobile: false,
                     isLandscape: false,
                   ),
@@ -593,12 +731,18 @@ class _MobileNavButton extends StatelessWidget {
 
 class _HeroContent extends StatelessWidget {
   final VoidCallback onProjectTap;
+  final VoidCallback onResumeTap;
+  final bool isDownloading;
+  final double downloadProgress;
   final bool isMobile;
   final bool isLandscape;
   final double? screenWidth;
 
   _HeroContent({
     required this.onProjectTap,
+    required this.onResumeTap,
+    required this.isDownloading,
+    required this.downloadProgress,
     required this.isMobile,
     required this.isLandscape,
     this.screenWidth,
@@ -688,12 +832,14 @@ class _HeroContent extends StatelessWidget {
             SizedBox(width: 10),
             Expanded(
               child: _GradientButton(
-                text: 'My Resume',
-                onPressed: () {},
+                text: isDownloading ? 'Downloading...' : 'My Resume',
+                onPressed: isDownloading ? null : onResumeTap,
                 filled: false,
                 isMobile: true,
                 isLandscape: true,
                 screenWidth: actualScreenWidth,
+                showProgress: isDownloading,
+                progress: downloadProgress,
               ),
             ),
           ],
@@ -711,12 +857,14 @@ class _HeroContent extends StatelessWidget {
             ),
             SizedBox(height: 12),
             _GradientButton(
-              text: 'My Resume',
-              onPressed: () {},
+              text: isDownloading ? 'Downloading...' : 'My Resume',
+              onPressed: isDownloading ? null : onResumeTap,
               filled: false,
               isMobile: true,
               isLandscape: false,
               screenWidth: actualScreenWidth,
+              showProgress: isDownloading,
+              progress: downloadProgress,
             ),
           ],
         )
@@ -730,10 +878,12 @@ class _HeroContent extends StatelessWidget {
             ),
             SizedBox(width: 30),
             _GradientButton(
-              text: 'My Resume',
-              onPressed: () {},
+              text: isDownloading ? 'Downloading...' : 'My Resume',
+              onPressed: isDownloading ? null : onResumeTap,
               filled: false,
               isMobile: false,
+              showProgress: isDownloading,
+              progress: downloadProgress,
             ),
           ],
         ),
@@ -776,11 +926,13 @@ class _AnimatedLine extends StatelessWidget {
 
 class _GradientButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool filled;
   final bool isMobile;
   final bool isLandscape;
   final double? screenWidth;
+  final bool showProgress;
+  final double progress;
 
   _GradientButton({
     required this.text,
@@ -789,6 +941,8 @@ class _GradientButton extends StatelessWidget {
     required this.isMobile,
     this.isLandscape = false,
     this.screenWidth,
+    this.showProgress = false,
+    this.progress = 0.0,
   });
 
   static const gradient = LinearGradient(
@@ -802,7 +956,7 @@ class _GradientButton extends StatelessWidget {
     final actualScreenWidth = screenWidth ?? MediaQuery.of(context).size.width;
 
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: onPressed == null ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onPressed,
         child: Container(
@@ -812,9 +966,9 @@ class _GradientButton extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             gradient: filled ? gradient : null,
-            color: filled ? null : Color(0xFF1a2332),
+            color: filled ? null : (onPressed == null ? Color(0xFF2A2F4A) : Color(0xFF1a2332)),
             borderRadius: BorderRadius.circular(6),
-            boxShadow: filled
+            boxShadow: filled && onPressed != null
                 ? [
               BoxShadow(
                 color: Color(0xFFF86E5B).withOpacity(0.3),
@@ -824,16 +978,47 @@ class _GradientButton extends StatelessWidget {
             ]
                 : null,
           ),
-          child: Center(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: isMobile ? (isLandscape ? actualScreenWidth * 0.028 : actualScreenWidth * 0.035) : 16,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
+          child: Stack(
+            children: [
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (showProgress)
+                      Container(
+                        width: isMobile ? (isLandscape ? 12 : 14) : 16,
+                        height: isMobile ? (isLandscape ? 12 : 14) : 16,
+                        margin: EdgeInsets.only(right: 8),
+                        child: CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                    Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: isMobile ? (isLandscape ? actualScreenWidth * 0.028 : actualScreenWidth * 0.035) : 16,
+                        color: Colors.white.withOpacity(onPressed == null ? 0.5 : 1.0),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
+              if (showProgress && progress > 0)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF86E5B).withOpacity(0.3)),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
