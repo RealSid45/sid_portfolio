@@ -9,9 +9,58 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(PortfolioApp());
+}
+
+class EmailService {
+  static final _functions = FirebaseFunctions.instance;
+
+  static Future<bool> sendContactEmail({
+    required String name,
+    required String email,
+    required String message,
+  }) async {
+    try {
+      // Call the Cloud Function
+      final callable = _functions.httpsCallable('sendPortfolioContactEmail');
+
+      final result = await callable.call({
+        'name': name,
+        'email': email,
+        'message': message,
+      });
+
+      // Check response
+      if (result.data['success'] == true) {
+        print('✅ Email sent successfully');
+        print('Message ID: ${result.data['messageId']}');
+        return true;
+      } else {
+        print('❌ Email sending failed');
+        return false;
+      }
+    } on FirebaseFunctionsException catch (e) {
+      print('Firebase Functions Error:');
+      print('Code: ${e.code}');
+      print('Message: ${e.message}');
+      print('Details: ${e.details}');
+      return false;
+    } catch (e) {
+      print('Error sending email: $e');
+      return false;
+    }
+  }
 }
 
 class PortfolioApp extends StatelessWidget {
@@ -51,6 +100,7 @@ class _PortfolioPageState extends State<PortfolioPage>
   bool _isProjectsVisible = false;
   bool _isContactsVisible = false;
   bool _isMenuOpen = false;
+  bool _isSubmitting = false;
 
   final TextEditingController _nameCtrl = TextEditingController();
   final TextEditingController _emailCtrl = TextEditingController();
@@ -244,11 +294,12 @@ class _PortfolioPageState extends State<PortfolioPage>
     }
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     final name = _nameCtrl.text.trim();
     final email = _emailCtrl.text.trim();
     final message = _msgCtrl.text.trim();
 
+    // Validation
     if (name.isEmpty) {
       _showSnackBar('Please enter your name', isError: true);
       return;
@@ -269,14 +320,43 @@ class _PortfolioPageState extends State<PortfolioPage>
       return;
     }
 
-    _showSnackBar(
-      'Message sent successfully! I\'ll get back to you soon.',
-      isError: false,
-    );
+    // Show loading
+    setState(() => _isSubmitting = true);
 
-    _nameCtrl.clear();
-    _emailCtrl.clear();
-    _msgCtrl.clear();
+    try {
+      // Send email via Firebase Cloud Function V2
+      final success = await EmailService.sendContactEmail(
+        name: name,
+        email: email,
+        message: message,
+      );
+
+      setState(() => _isSubmitting = false);
+
+      if (success) {
+        _showSnackBar(
+          'Message sent successfully! I\'ll get back to you soon. 🎉',
+          isError: false,
+        );
+
+        // Clear form
+        _nameCtrl.clear();
+        _emailCtrl.clear();
+        _msgCtrl.clear();
+      } else {
+        _showSnackBar(
+          'Failed to send message. Please try again or email me directly.',
+          isError: true,
+        );
+      }
+    } catch (e) {
+      setState(() => _isSubmitting = false);
+      print('Submission error: $e');
+      _showSnackBar(
+        'An error occurred. Please check your internet connection.',
+        isError: true,
+      );
+    }
   }
 
   void _showSnackBar(String message, {required bool isError}) {
@@ -341,27 +421,75 @@ class _PortfolioPageState extends State<PortfolioPage>
     final isLandscape = screenWidth > screenHeight && isMobile;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/KX3.jpg'),
-            fit: BoxFit.cover,
+      body: Stack(  // CHANGE: Container → Stack
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/KX3.jpg'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  _buildHeader(isMobile, screenWidth),
+                  _buildHeroSection(isMobile, isLandscape, screenWidth, screenHeight),
+                  _buildSkillsSection(isMobile, isLandscape, screenWidth),
+                  _buildAboutSection(isMobile, isLandscape, screenWidth),
+                  _buildProjectsSection(isMobile, isLandscape, screenWidth),
+                  _buildContactSection(isMobile, isLandscape, screenWidth),
+                ],
+              ),
+            ),
           ),
-        ),
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          physics: BouncingScrollPhysics(),
-          child: Column(
-            children: [
-              _buildHeader(isMobile, screenWidth),
-              _buildHeroSection(isMobile, isLandscape, screenWidth, screenHeight),
-              _buildSkillsSection(isMobile, isLandscape, screenWidth),
-              _buildAboutSection(isMobile, isLandscape, screenWidth),
-              _buildProjectsSection(isMobile, isLandscape, screenWidth),
-              _buildContactSection(isMobile, isLandscape, screenWidth),
-            ],
-          ),
-        ),
+
+          // ADD THIS: Loading overlay
+          if (_isSubmitting)
+            Container(
+              color: Colors.black54,
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF1A1F3A),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFFF86E5B).withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation(Color(0xFFF86E5B)),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Sending your message...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1794,7 +1922,7 @@ class _ProjectsContent extends StatelessWidget {
               _ProjectCard(
                 title: 'Rivio',
                 description: 'Track daily routines with charts & filters',
-                imageUrl: 'images/R2.png',
+                imageUrl: 'assets/images/R2.png',
                 tags: ['Flutter', 'Figma', 'Firebase'],
                 isLandscape: isLandscape,
               ),
