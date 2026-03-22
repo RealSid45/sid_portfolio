@@ -1,0 +1,127 @@
+{
+  "project_info": {
+    "project_number": "717168903096",
+    "firebase_url": "https://sample-thee-default-rtdb.firebaseio.com",
+    "project_id": "sample-thee",
+    "storage_bucket": "sample-thee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:717168903096:android:bef02adbd9da1b9ad3c54d",
+        "android_client_info": {
+          "package_name": "com.example.firebasepro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "717168903096-suhdp1tbc7c4gc97cl1m2eeu6g12td79.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.firebasepro",
+            "certificate_hash": "e538f677f7cfff65ebef704f2b7c09a978117839"
+          }
+        },
+        {
+          "client_id": "717168903096-3mb1nmu2ls0iamvsp0e9sokh614psjr4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJvRYpyIrzj2579Vrit6wvK69YoeorZ7U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "717168903096-3mb1nmu2ls0iamvsp0e9sokh614psjr4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "717168903096-1l5tju7rbthcmdlbrdp4pdg8d8be3iie.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.rivio"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:717168903096:android:24d0e3d8f6c58c19d3c54d",
+        "android_client_info": {
+          "package_name": "com.example.rivio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "717168903096-3mb1nmu2ls0iamvsp0e9sokh614psjr4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJvRYpyIrzj2579Vrit6wvK69YoeorZ7U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "717168903096-3mb1nmu2ls0iamvsp0e9sokh614psjr4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "717168903096-1l5tju7rbthcmdlbrdp4pdg8d8be3iie.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.rivio"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:717168903096:android:fa14f42de17a80ccd3c54d",
+        "android_client_info": {
+          "package_name": "com.example.sid_portfolio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "717168903096-3mb1nmu2ls0iamvsp0e9sokh614psjr4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJvRYpyIrzj2579Vrit6wvK69YoeorZ7U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "717168903096-3mb1nmu2ls0iamvsp0e9sokh614psjr4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "717168903096-1l5tju7rbthcmdlbrdp4pdg8d8be3iie.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.rivio"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
