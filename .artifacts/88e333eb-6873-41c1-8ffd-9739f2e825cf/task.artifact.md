@@ -1,0 +1,4 @@
+- [ ] Fix section visibility logic in `_handleScroll` in `lib/main.dart`
+- [ ] Ensure sections stay visible once triggered to avoid disappearing when layout changes
+- [ ] Update `_scrollToSection` to handle visibility and active section state correctly
+- [ ] Verify that navigating to Projects after expanding Experience works as expected
