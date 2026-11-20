@@ -1,55 +1,189 @@
+import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:bootstrap_icons/bootstrap_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'design_system.dart';
 import 'widgets/responsive_layout.dart';
 
 class SupabaseConfig {
-  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://ljxhljrbwvawycdwewpe.supabase.co',
+  );
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeGhsanJid3Zhd3ljZHdld3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNTc5NjksImV4cCI6MjA4OTczMzk2OX0.ML7vtvN-hUubGUwdPQpgjtkwmccKXna6RMazvuKzUm0',
+  );
+  static const String resendApiKey = String.fromEnvironment('RESEND_API_KEY');
+  static const String recipientEmail = String.fromEnvironment(
+    'EMAIL_RECIPIENT',
+    defaultValue: 'nightwingrxs75@gmail.com',
+  );
   static const String messagesTable = 'contact_messages';
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  assert(
-    SupabaseConfig.supabaseUrl.isNotEmpty,
-    'SUPABASE_URL is missing.',
-  );
+  final url = SupabaseConfig.supabaseUrl;
+  final anonKey = SupabaseConfig.supabaseAnonKey;
 
-  await Supabase.initialize(
-    url: SupabaseConfig.supabaseUrl,
-    anonKey: SupabaseConfig.supabaseAnonKey,
-  );
+  if (url.isNotEmpty && anonKey.isNotEmpty) {
+    try {
+      await Supabase.initialize(
+        url: url,
+        anonKey: anonKey,
+      );
+    } catch (e) {
+      debugPrint('Supabase initialization error: $e');
+    }
+  }
 
   runApp(PortfolioApp());
 }
 
 class MessageService {
-  static final _client = Supabase.instance.client;
-
   static Future<bool> sendContactMessage({
     required String name,
     required String email,
     required String message,
   }) async {
+    final cleanName = name.trim();
+    final cleanEmail = email.trim();
+    final cleanMsg = message.trim();
+
+    // 1. Send via Web FormSubmit AJAX API (CORS-friendly, instant email to nightwingrxs75@gmail.com)
+    bool webFormSent = await _sendViaFormSubmit(
+      name: cleanName,
+      email: cleanEmail,
+      message: cleanMsg,
+    );
+    if (webFormSent) return true;
+
+    // 2. Try Resend API directly
+    bool resendSent = await _sendViaResend(
+      name: cleanName,
+      email: cleanEmail,
+      message: cleanMsg,
+    );
+    if (resendSent) return true;
+
+    // 3. Try Supabase DB insert as fallback
+    bool supabaseSaved = await _saveToSupabase(
+      name: cleanName,
+      email: cleanEmail,
+      message: cleanMsg,
+    );
+
+    return supabaseSaved;
+  }
+
+  static Future<bool> _sendViaFormSubmit({
+    required String name,
+    required String email,
+    required String message,
+  }) async {
     try {
-      await _client.from(SupabaseConfig.messagesTable).insert({
-        'name': name.trim(),
-        'email': email.trim(),
-        'message': message.trim(),
-        'created_at': DateTime.now().toIso8601String(),
-        'read': false,
-      });
-      return true;
-    } on PostgrestException catch (e) {
-      debugPrint('Supabase error: ${e.message}');
+      final response = await http.post(
+        Uri.parse('https://formsubmit.co/ajax/${SupabaseConfig.recipientEmail}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'message': message,
+          '_subject': '🎯 New Portfolio Contact Query from $name',
+          '_captcha': 'false',
+        }),
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == 'true' || data['success'] == true) {
+          debugPrint('Contact email sent successfully to ${SupabaseConfig.recipientEmail}!');
+          return true;
+        }
+      }
+      debugPrint('FormSubmit HTTP ${response.statusCode}: ${response.body}');
       return false;
     } catch (e) {
-      debugPrint('Unexpected error: $e');
+      debugPrint('FormSubmit error: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> _sendViaResend({
+    required String name,
+    required String email,
+    required String message,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.resend.com/emails'),
+        headers: {
+          'Authorization': 'Bearer ${SupabaseConfig.resendApiKey}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'from': 'Portfolio Contact <onboarding@resend.dev>',
+          'to': [SupabaseConfig.recipientEmail],
+          'reply_to': email,
+          'subject': '🎯 New Portfolio Contact Query from $name',
+          'html': '''
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px;">
+              <h2 style="color: #F86E5B; border-bottom: 2px solid #F86E5B; padding-bottom: 8px;">
+                📬 New Portfolio Contact Query
+              </h2>
+              <p><strong>Name:</strong> $name</p>
+              <p><strong>Email:</strong> <a href="mailto:$email">$email</a></p>
+              <div style="background-color: #f5f5f5; padding: 15px; border-left: 4px solid #F86E5B; margin-top: 15px; border-radius: 4px;">
+                <p><strong>Message:</strong></p>
+                <p style="white-space: pre-wrap;">$message</p>
+              </div>
+              <p style="font-size: 12px; color: #888; margin-top: 25px;">
+                Sent from Sidharth Portfolio Contact Form • ${DateTime.now().toIso8601String()}
+              </p>
+            </div>
+          ''',
+        }),
+      ).timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('Resend Email sent successfully!');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Resend error: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> _saveToSupabase({
+    required String name,
+    required String email,
+    required String message,
+  }) async {
+    try {
+      final client = Supabase.instance.client;
+      await client.from(SupabaseConfig.messagesTable).insert({
+        'name': name,
+        'email': email,
+        'message': message,
+        'created_at': DateTime.now().toIso8601String(),
+        'read': false,
+      }).timeout(const Duration(seconds: 3));
+      return true;
+    } catch (e) {
+      debugPrint('Supabase save error: $e');
       return false;
     }
   }
@@ -855,6 +989,7 @@ class _PortfolioPageState extends State<PortfolioPage>
             horizontal: padding,
           ),
           child: _ContactContent(
+            isSubmitting: _isSubmitting,
             nameCtrl: _nameCtrl,
             emailCtrl: _emailCtrl,
             msgCtrl: _msgCtrl,
@@ -1010,10 +1145,10 @@ class _HeroContent extends StatelessWidget {
           runSpacing: 16,
           alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
           children: [
-            _HomeSocialIcon(icon: Bootstrap.google, label: 'Gmail', url: 'mailto:sidhuxplore4@gmail.com'),
-            _HomeSocialIcon(icon: Bootstrap.whatsapp, label: 'WhatsApp', url: 'https://wa.me/919544413854'),
-            _HomeSocialIcon(icon: Bootstrap.instagram, label: 'Instagram', url: 'https://instagram.com/_the_realsid_'),
-            _HomeSocialIcon(icon: Bootstrap.twitter_x, label: 'X', url: 'https://x.com/SidharthSidu1'),
+            _HomeSocialIcon(icon: BootstrapIcons.google, label: 'Gmail', url: 'mailto:sidhuxplore4@gmail.com'),
+            _HomeSocialIcon(icon: BootstrapIcons.whatsapp, label: 'WhatsApp', url: 'https://wa.me/919544413854'),
+            _HomeSocialIcon(icon: BootstrapIcons.instagram, label: 'Instagram', url: 'https://instagram.com/_the_realsid_'),
+            _HomeSocialIcon(icon: BootstrapIcons.twitter_x, label: 'X', url: 'https://x.com/SidharthSidu1'),
           ],
         ),
       ],
@@ -1540,11 +1675,27 @@ class _ProjectsContent extends StatelessWidget {
           ResponsiveLayout(
             mobile: Column(
               children: [
-                _ProjectCard(title: 'Nike App Clone', description: 'Nike Clone – Clone Of The Official Nike Store', imageUrl: 'assets/images/1.png', tags: ['Flutter']),
+                _ProjectCard(
+                  title: 'Nike App Clone',
+                  description: 'Nike Clone – Clone Of The Official Nike Store',
+                  imageUrl: 'assets/images/1.png',
+                  tags: ['Flutter', 'Firebase'],
+                ),
                 SizedBox(height: 20),
-                _ProjectCard(title: 'Rivio', description: 'Track daily routines with charts & filters', imageUrl: 'assets/images/R2.png', tags: ['Flutter', 'Figma', 'Firebase']),
+                _ProjectCard(
+                  title: 'Rivio',
+                  description: 'Track daily routines with charts & filters',
+                  imageUrl: 'assets/images/R2.png',
+                  extraImages: ['assets/images/R3.png', 'assets/images/R4.png'],
+                  tags: ['Flutter', 'Figma', 'Firebase', 'Supabase'],
+                ),
                 SizedBox(height: 20),
-                _ProjectCard(title: 'SnackSnap', description: 'Modern UI design exploration', imageUrl: 'assets/images/F1.png', tags: ['Figma']),
+                _ProjectCard(
+                  title: 'Nomad',
+                  description: 'Plan together. Travel better.',
+                  imageUrl: 'assets/images/nomad.png',
+                  tags: ['Flutter', 'Figma', 'Firebase'],
+                ),
               ],
             ),
             desktop: GridView.count(
@@ -1555,9 +1706,25 @@ class _ProjectsContent extends StatelessWidget {
               physics: NeverScrollableScrollPhysics(),
               childAspectRatio: 0.85,
               children: [
-                _ProjectCard(title: 'Nike App Clone', description: 'Nike Clone – Clone Of The Official Nike Store', imageUrl: 'assets/images/1.png', tags: ['Flutter']),
-                _ProjectCard(title: 'Rivio', description: 'Track daily routines with charts & filters', imageUrl: 'assets/images/R2.png', tags: ['Flutter', 'Figma', 'Firebase']),
-                _ProjectCard(title: 'SnackSnap', description: 'Modern UI design exploration', imageUrl: 'assets/images/F1.png', tags: ['Figma']),
+                _ProjectCard(
+                  title: 'Nike App Clone',
+                  description: 'Nike Clone – Clone Of The Official Nike Store',
+                  imageUrl: 'assets/images/1.png',
+                  tags: ['Flutter', 'Firebase'],
+                ),
+                _ProjectCard(
+                  title: 'Rivio',
+                  description: 'Track daily routines with charts & filters',
+                  imageUrl: 'assets/images/R2.png',
+                  extraImages: ['assets/images/R3.png', 'assets/images/R4.png'],
+                  tags: ['Flutter', 'Figma', 'Firebase', 'Supabase'],
+                ),
+                _ProjectCard(
+                  title: 'Nomad',
+                  description: 'Plan together. Travel better.',
+                  imageUrl: 'assets/images/nomad.png',
+                  tags: ['Flutter', 'Figma', 'Firebase'],
+                ),
               ],
             ),
           ),
@@ -1573,19 +1740,269 @@ class _ProjectCard extends StatefulWidget {
   final String title;
   final String description;
   final String imageUrl;
+  final List<String> extraImages;
   final List<String> tags;
-  _ProjectCard({required this.title, required this.description, required this.imageUrl, required this.tags});
+
+  _ProjectCard({
+    required this.title,
+    required this.description,
+    required this.imageUrl,
+    this.extraImages = const [],
+    required this.tags,
+  });
+
+  List<String> get allImages => [imageUrl, ...extraImages];
+
   @override
   State<_ProjectCard> createState() => _ProjectCardState();
 }
 
 class _ProjectCardState extends State<_ProjectCard> {
   bool _isHovered = false;
+  int _currentImageIndex = 0;
+  Timer? _slideshowTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startSlideshow();
+  }
+
+  @override
+  void dispose() {
+    _slideshowTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startSlideshow() {
+    _slideshowTimer?.cancel();
+    if (widget.allImages.length <= 1) return;
+    _slideshowTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (!_isHovered && mounted) {
+        setState(() {
+          _currentImageIndex = (_currentImageIndex + 1) % widget.allImages.length;
+        });
+      }
+    });
+  }
+
+  void _stopSlideshow() {
+    _slideshowTimer?.cancel();
+  }
+
+  void _showFullImageDialog(BuildContext context, int initialIndex) {
+    int dialogIndex = initialIndex;
+    final images = widget.allImages;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close',
+      barrierColor: Colors.black.withOpacity(0.92),
+      transitionDuration: const Duration(milliseconds: 250),
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+              CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic),
+            ),
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (context, anim1, anim2) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Scaffold(
+              backgroundColor: Colors.transparent,
+              body: Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.transparent,
+                    ),
+                  ),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 80),
+                      child: InteractiveViewer(
+                        key: ValueKey<int>(dialogIndex),
+                        maxScale: 4.0,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.asset(
+                            images[dialogIndex],
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (images.length > 1)
+                    Positioned(
+                      left: 24,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              setDialogState(() {
+                                dialogIndex = (dialogIndex - 1 + images.length) % images.length;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(30),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppDesign.surfaceDark,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppDesign.primary, width: 2),
+                              ),
+                              child: SvgPicture.string(
+                                '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F86E5B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>''',
+                                width: 20,
+                                height: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (images.length > 1)
+                    Positioned(
+                      right: 24,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              setDialogState(() {
+                                dialogIndex = (dialogIndex + 1) % images.length;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(30),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppDesign.surfaceDark,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppDesign.primary, width: 2),
+                              ),
+                              child: SvgPicture.string(
+                                '''<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F86E5B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>''',
+                                width: 20,
+                                height: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (images.length > 1)
+                    Positioned(
+                      bottom: 28,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(images.length, (idx) {
+                          final isCurrent = idx == dialogIndex;
+                          return GestureDetector(
+                            onTap: () => setDialogState(() => dialogIndex = idx),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              margin: const EdgeInsets.symmetric(horizontal: 5),
+                              width: isCurrent ? 24 : 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: isCurrent ? AppDesign.primary : Colors.white38,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  Positioned(
+                    top: 24,
+                    right: 24,
+                    child: SafeArea(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.of(context).pop(),
+                          borderRadius: BorderRadius.circular(30),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppDesign.surfaceDark,
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(color: AppDesign.primary, width: 2),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppDesign.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: SvgPicture.string(
+                                    '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>''',
+                                    width: 14,
+                                    height: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'CLOSE',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final images = widget.allImages;
+    final currentImageIndex = _currentImageIndex.clamp(0, images.length - 1);
+    final currentImage = images[currentImageIndex];
+
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
+      onEnter: (_) {
+        _stopSlideshow();
+        setState(() => _isHovered = true);
+      },
+      onExit: (_) {
+        setState(() => _isHovered = false);
+        _startSlideshow();
+      },
       cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
         duration: Duration(milliseconds: 200),
@@ -1606,12 +2023,163 @@ class _ProjectCardState extends State<_ProjectCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Container(
-                    margin: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Color(0xFF0A0E27),
-                      borderRadius: BorderRadius.circular(8),
-                      image: DecorationImage(image: AssetImage(widget.imageUrl), fit: BoxFit.cover),
+                  child: GestureDetector(
+                    onTap: () => _showFullImageDialog(context, currentImageIndex),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Container(
+                          margin: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Color(0xFF0A0E27),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 400),
+                            child: Image.asset(
+                              currentImage,
+                              key: ValueKey<String>(currentImage + _isHovered.toString()),
+                              fit: _isHovered ? BoxFit.contain : BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            ),
+                          ),
+                        ),
+                        AnimatedOpacity(
+                          duration: const Duration(milliseconds: 300),
+                          opacity: _isHovered ? 1.0 : 0.0,
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: AppDesign.surfaceDark,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: AppDesign.primary, width: 2),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: AppDesign.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: SvgPicture.string(
+                                      '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>''',
+                                      width: 12,
+                                      height: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'FULL VIEW',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_isHovered && images.length > 1) ...[
+                          Positioned(
+                            left: 8,
+                            top: 0,
+                            bottom: 0,
+                            child: Center(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _currentImageIndex = (_currentImageIndex - 1 + images.length) % images.length;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(25),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppDesign.surfaceDark,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: AppDesign.primary, width: 1.5),
+                                    ),
+                                    child: SvgPicture.string(
+                                      '''<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F86E5B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>''',
+                                      width: 14,
+                                      height: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            right: 8,
+                            top: 0,
+                            bottom: 0,
+                            child: Center(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _currentImageIndex = (_currentImageIndex + 1) % images.length;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(25),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppDesign.surfaceDark,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: AppDesign.primary, width: 1.5),
+                                    ),
+                                    child: SvgPicture.string(
+                                      '''<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F86E5B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>''',
+                                      width: 14,
+                                      height: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 16,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(images.length, (idx) {
+                                final isCurrent = idx == currentImageIndex;
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _currentImageIndex = idx;
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                                    width: isCurrent ? 16 : 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: isCurrent ? AppDesign.primary : Colors.white54,
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -1844,12 +2412,14 @@ class _ExperienceSkillChip extends StatelessWidget {
 }
 
 class _ContactContent extends StatelessWidget {
+  final bool isSubmitting;
   final TextEditingController nameCtrl;
   final TextEditingController emailCtrl;
   final TextEditingController msgCtrl;
   final VoidCallback onSubmit;
 
   _ContactContent({
+    this.isSubmitting = false,
     required this.nameCtrl,
     required this.emailCtrl,
     required this.msgCtrl,
@@ -1936,15 +2506,29 @@ class _ContactContent extends StatelessWidget {
 
   Widget _buildSubmitButton(BuildContext context) {
     return ElevatedButton(
-      onPressed: onSubmit,
+      onPressed: isSubmitting ? null : onSubmit,
       style: ElevatedButton.styleFrom(
         backgroundColor: AppDesign.primary,
+        disabledBackgroundColor: AppDesign.primary.withOpacity(0.6),
         elevation: 0,
         padding: EdgeInsets.symmetric(horizontal: 56, vertical: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
-      child: Text("Submit",
-          style: TextStyle(color: Colors.white, fontSize: AppDesign.bodyL, fontWeight: FontWeight.w500, letterSpacing: 0.5)),
+      child: isSubmitting
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              ),
+            )
+          : Text("Submit",
+              style: TextStyle(
+                  color: Colors.black,
+                  fontSize: AppDesign.bodyL,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5)),
     );
   }
 
@@ -1959,10 +2543,10 @@ class _ContactContent extends StatelessWidget {
           spacing: 16,
           runSpacing: 16,
           children: [
-            _SocialIcon(icon: Bootstrap.github, label: 'GitHub', url: 'https://github.com/RealSid45'),
-            _SocialIcon(icon: Bootstrap.linkedin, label: 'LinkedIn', url: 'https://www.linkedin.com/in/sidharth-biju-414273310/'),
-            _SocialIcon(icon: Bootstrap.microsoft, label: 'Outlook', url: 'mailto:sidhuxplore4@outlook.com'),
-            _SocialIcon(icon: Bootstrap.dribbble, label: 'Dribbble', url: 'https://dribbble.com/'),
+            _SocialIcon(icon: BootstrapIcons.github, label: 'GitHub', url: 'https://github.com/RealSid45'),
+            _SocialIcon(icon: BootstrapIcons.linkedin, label: 'LinkedIn', url: 'https://www.linkedin.com/in/sidharth-biju-414273310/'),
+            _SocialIcon(icon: BootstrapIcons.microsoft, label: 'Outlook', url: 'mailto:sidhuxplore4@outlook.com'),
+            _SocialIcon(icon: BootstrapIcons.dribbble, label: 'Dribbble', url: 'https://dribbble.com/'),
           ],
         ),
       ],
