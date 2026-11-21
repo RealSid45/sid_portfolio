@@ -1653,85 +1653,81 @@ class _SkillProgress extends StatelessWidget {
 class _ProjectsContent extends StatelessWidget {
   final bool isVisible;
   _ProjectsContent({required this.isVisible});
+
   @override
   Widget build(BuildContext context) {
     final isMobile = AppDesign.isMobile(context);
     final padding = AppDesign.responsivePadding(context);
-    final titleSize = AppDesign.responsiveFontSize(context, AppDesign.displayL);
+
     return Container(
-      decoration: BoxDecoration(color: Colors.black.withOpacity(0.45)),
-      padding: EdgeInsets.symmetric(vertical: isMobile ? 50 : 70, horizontal: padding),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: isMobile ? 80 : 120),
+      color: Colors.black.withOpacity(0.9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Projects',
-              style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.bold, color: Colors.white)),
-          SizedBox(height: 4),
-          Text('Where Innovation Meets Execution',
-              style: TextStyle(color: Colors.grey[400], fontSize: AppDesign.bodyM)),
-          SizedBox(height: 12),
-          _AnimatedLine(width: isMobile ? 100 : 150),
-          SizedBox(height: 30),
-          ResponsiveLayout(
-            mobile: Column(
-              children: [
-                _ProjectCard(
+          _buildHeader(context),
+          const SizedBox(height: 80),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 3,
+            separatorBuilder: (context, index) => const SizedBox(height: 60),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _ProjectCard(
                   title: 'Nike App Clone',
                   description: 'Nike Clone – Clone Of The Official Nike Store',
                   imageUrl: 'assets/images/1.png',
                   tags: ['Flutter', 'Firebase'],
-                ),
-                SizedBox(height: 20),
-                _ProjectCard(
+                  index: index,
+                );
+              } else if (index == 1) {
+                return _ProjectCard(
                   title: 'Rivio',
                   description: 'Track daily routines with charts & filters',
                   imageUrl: 'assets/images/R2.png',
                   extraImages: ['assets/images/R3.png', 'assets/images/R4.png'],
                   tags: ['Flutter', 'Figma', 'Firebase', 'Supabase'],
-                ),
-                SizedBox(height: 20),
-                _ProjectCard(
+                  playStoreUrl: 'https://play.google.com/store/apps/details?id=com.rivioapp.rivio',
+                  index: index,
+                );
+              } else {
+                return _ProjectCard(
                   title: 'Nomad',
                   description: 'Plan together. Travel better.',
                   imageUrl: 'assets/images/nomad.png',
                   tags: ['Flutter', 'Figma', 'Firebase'],
-                ),
-              ],
-            ),
-            desktop: GridView.count(
-              crossAxisCount: 3,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              childAspectRatio: 0.85,
-              children: [
-                _ProjectCard(
-                  title: 'Nike App Clone',
-                  description: 'Nike Clone – Clone Of The Official Nike Store',
-                  imageUrl: 'assets/images/1.png',
-                  tags: ['Flutter', 'Firebase'],
-                ),
-                _ProjectCard(
-                  title: 'Rivio',
-                  description: 'Track daily routines with charts & filters',
-                  imageUrl: 'assets/images/R2.png',
-                  extraImages: ['assets/images/R3.png', 'assets/images/R4.png'],
-                  tags: ['Flutter', 'Figma', 'Firebase', 'Supabase'],
-                ),
-                _ProjectCard(
-                  title: 'Nomad',
-                  description: 'Plan together. Travel better.',
-                  imageUrl: 'assets/images/nomad.png',
-                  tags: ['Flutter', 'Figma', 'Firebase'],
-                ),
-              ],
-            ),
+                  index: index,
+                );
+              }
+            },
           ),
-          SizedBox(height: 40),
-          Center(child: TextButton(onPressed: () {}, child: Text('See More', style: TextStyle(color: Colors.white70, fontSize: AppDesign.bodyS)))),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('03',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: AppDesign.primary,
+                letterSpacing: 4)),
+        const SizedBox(height: 8),
+        Text('SELECTED / WORKS',
+            style: TextStyle(
+                fontSize: AppDesign.responsiveFontSize(context, AppDesign.displayM),
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -1)),
+        const SizedBox(height: 16),
+        Container(width: 80, height: 4, color: AppDesign.primary),
+      ],
     );
   }
 }
@@ -1742,6 +1738,8 @@ class _ProjectCard extends StatefulWidget {
   final String imageUrl;
   final List<String> extraImages;
   final List<String> tags;
+  final String? playStoreUrl;
+  final int index;
 
   _ProjectCard({
     required this.title,
@@ -1749,6 +1747,8 @@ class _ProjectCard extends StatefulWidget {
     required this.imageUrl,
     this.extraImages = const [],
     required this.tags,
+    this.playStoreUrl,
+    required this.index,
   });
 
   List<String> get allImages => [imageUrl, ...extraImages];
@@ -1990,10 +1990,6 @@ class _ProjectCardState extends State<_ProjectCard> {
 
   @override
   Widget build(BuildContext context) {
-    final images = widget.allImages;
-    final currentImageIndex = _currentImageIndex.clamp(0, images.length - 1);
-    final currentImage = images[currentImageIndex];
-
     return MouseRegion(
       onEnter: (_) {
         _stopSlideshow();
@@ -2003,225 +1999,334 @@ class _ProjectCardState extends State<_ProjectCard> {
         setState(() => _isHovered = false);
         _startSlideshow();
       },
+      child: ResponsiveLayout(
+        mobile: _buildMobileLayout(),
+        desktop: _buildDesktopLayout(),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    final bool isEven = widget.index % 2 == 0;
+    return Container(
+      height: 450,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white24, width: 2),
+      ),
+      child: Row(
+        children: isEven
+            ? [_buildImage(flex: 6), _buildDetails(flex: 4)]
+            : [_buildDetails(flex: 4), _buildImage(flex: 6)],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white24, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildImage(height: 250),
+          _buildDetails(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImage({int? flex, double? height}) {
+    final images = widget.allImages;
+    final currentImageIndex = _currentImageIndex.clamp(0, images.length - 1);
+    final currentImage = images[currentImageIndex];
+
+    Widget content = MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        margin: EdgeInsets.only(top: _isHovered ? 0 : 4, bottom: _isHovered ? 4 : 0),
-        transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: _isHovered
-              ? [BoxShadow(color: Color(0xFFF86E5B).withOpacity(0.35), blurRadius: 16, spreadRadius: 1, offset: Offset(0, 6))]
-              : [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: Offset(0, 4))],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            decoration: BoxDecoration(color: Color(0xFF1A1F3A), border: Border.all(color: Color(0xFF2A2F4A), width: 1)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _showFullImageDialog(context, currentImageIndex),
-                    child: Stack(
-                      fit: StackFit.expand,
+      child: GestureDetector(
+        onTap: () => _showFullImageDialog(context, currentImageIndex),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          height: height,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: _isHovered ? AppDesign.surfaceDark : Colors.black45,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (_isHovered) ...[
+                Image.asset(
+                  currentImage,
+                  fit: BoxFit.cover,
+                  color: Colors.black.withOpacity(0.7),
+                  colorBlendMode: BlendMode.darken,
+                ),
+              ],
+              AnimatedScale(
+                scale: _isHovered ? 1.02 : 1.0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOutCubic,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  switchInCurve: Curves.easeIn,
+                  switchOutCurve: Curves.easeOut,
+                  child: Image.asset(
+                    currentImage,
+                    key: ValueKey<String>(currentImage + _isHovered.toString()),
+                    fit: _isHovered ? BoxFit.contain : BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    color: _isHovered
+                        ? null
+                        : Colors.black.withOpacity(0.3),
+                    colorBlendMode: _isHovered ? null : BlendMode.multiply,
+                  ),
+                ),
+              ),
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                opacity: _isHovered ? 1.0 : 0.0,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppDesign.surfaceDark,
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: AppDesign.primary, width: 2),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black87,
+                          blurRadius: 14,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          margin: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Color(0xFF0A0E27),
-                            borderRadius: BorderRadius.circular(8),
+                          padding: const EdgeInsets.all(5),
+                          decoration: const BoxDecoration(
+                            color: AppDesign.primary,
+                            shape: BoxShape.circle,
                           ),
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 400),
-                            child: Image.asset(
-                              currentImage,
-                              key: ValueKey<String>(currentImage + _isHovered.toString()),
-                              fit: _isHovered ? BoxFit.contain : BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                            ),
+                          child: SvgPicture.string(
+                            '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>''',
+                            width: 14,
+                            height: 14,
                           ),
                         ),
-                        AnimatedOpacity(
-                          duration: const Duration(milliseconds: 300),
-                          opacity: _isHovered ? 1.0 : 0.0,
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: AppDesign.surfaceDark,
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: AppDesign.primary, width: 2),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: AppDesign.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: SvgPicture.string(
-                                      '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>''',
-                                      width: 12,
-                                      height: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    'FULL VIEW',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'FULL VIEW',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
                           ),
                         ),
-                        if (_isHovered && images.length > 1) ...[
-                          Positioned(
-                            left: 8,
-                            top: 0,
-                            bottom: 0,
-                            child: Center(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      _currentImageIndex = (_currentImageIndex - 1 + images.length) % images.length;
-                                    });
-                                  },
-                                  borderRadius: BorderRadius.circular(25),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: AppDesign.surfaceDark,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: AppDesign.primary, width: 1.5),
-                                    ),
-                                    child: SvgPicture.string(
-                                      '''<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F86E5B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>''',
-                                      width: 14,
-                                      height: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 8,
-                            top: 0,
-                            bottom: 0,
-                            child: Center(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      _currentImageIndex = (_currentImageIndex + 1) % images.length;
-                                    });
-                                  },
-                                  borderRadius: BorderRadius.circular(25),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: AppDesign.surfaceDark,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: AppDesign.primary, width: 1.5),
-                                    ),
-                                    child: SvgPicture.string(
-                                      '''<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F86E5B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>''',
-                                      width: 14,
-                                      height: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 16,
-                            left: 0,
-                            right: 0,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(images.length, (idx) {
-                                final isCurrent = idx == currentImageIndex;
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _currentImageIndex = idx;
-                                    });
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                                    width: isCurrent ? 16 : 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: isCurrent ? AppDesign.primary : Colors.white54,
-                                      borderRadius: BorderRadius.circular(3),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(widget.title,
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
-                      SizedBox(height: 6),
-                      Text(widget.description,
-                          style: TextStyle(color: Colors.grey[400], fontSize: 13, height: 1.3),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis),
-                      SizedBox(height: 12),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: widget.tags
-                            .map((tag) => Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              ),
+              if (_isHovered && images.length > 1) ...[
+                Positioned(
+                  left: 12,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _currentImageIndex = (_currentImageIndex - 1 + images.length) % images.length;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(25),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Color(0xFF0A0E27),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Color(0xFF2A2F4A), width: 1),
+                            color: AppDesign.surfaceDark.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppDesign.primary, width: 1.5),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black54,
+                                blurRadius: 6,
+                              ),
+                            ],
                           ),
-                          child: Text(tag, style: TextStyle(color: Colors.white70, fontSize: 11)),
-                        ))
-                            .toList(),
+                          child: SvgPicture.string(
+                            '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F86E5B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>''',
+                            width: 16,
+                            height: 16,
+                          ),
+                        ),
                       ),
-                    ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 12,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _currentImageIndex = (_currentImageIndex + 1) % images.length;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(25),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppDesign.surfaceDark.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppDesign.primary, width: 1.5),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black54,
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: SvgPicture.string(
+                            '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F86E5B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>''',
+                            width: 16,
+                            height: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 14,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(images.length, (idx) {
+                      final isCurrent = idx == currentImageIndex;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _currentImageIndex = idx;
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: isCurrent ? 20 : 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: isCurrent ? AppDesign.primary : Colors.white54,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ),
               ],
-            ),
+            ],
           ),
         ),
       ),
     );
+
+    return flex != null ? Expanded(flex: flex, child: content) : content;
+  }
+
+  Widget _buildDetails({int? flex}) {
+    Widget content = AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.all(40),
+      color: _isHovered ? AppDesign.primary : AppDesign.surfaceDark,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(widget.title.toUpperCase(),
+              style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: _isHovered ? Colors.black : Colors.white,
+                  letterSpacing: 1)),
+          const SizedBox(height: 16),
+          Text(widget.description,
+              style: TextStyle(
+                  fontSize: 16,
+                  color: _isHovered ? Colors.black87 : Colors.white70,
+                  height: 1.6)),
+          const SizedBox(height: 24),
+          if (widget.playStoreUrl != null) ...[
+            InkWell(
+              onTap: () => launchUrl(Uri.parse(widget.playStoreUrl!)),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: _isHovered ? Colors.black : AppDesign.primary,
+                      width: 1.5),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.string(
+                      '''<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/></svg>''',
+                      width: 14,
+                      height: 14,
+                      colorFilter: ColorFilter.mode(
+                        _isHovered ? Colors.black : AppDesign.primary,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('GOOGLE PLAY',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: _isHovered ? Colors.black : AppDesign.primary,
+                            letterSpacing: 1)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: widget.tags
+                .map((tag) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: _isHovered ? Colors.black26 : Colors.white24),
+                      ),
+                      child: Text(tag.toUpperCase(),
+                          style: TextStyle(
+                              color: _isHovered ? Colors.black54 : Colors.white38,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold)),
+                    ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+
+    return flex != null ? Expanded(flex: flex, child: content) : content;
   }
 }
 
