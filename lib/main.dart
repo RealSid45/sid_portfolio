@@ -277,32 +277,49 @@ class _PortfolioPageState extends State<PortfolioPage>
 
   void _handleScroll() {
     if (!_scrollController.hasClients) return;
-    final position = _scrollController.position.pixels;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    if (maxScroll <= 0) return;
 
-    final aboutVisible = position > maxScroll * 0.2;
-    final projectsVisible = position > maxScroll * 0.45;
-    final experienceVisible = position > maxScroll * 0.6;
-    final contactsVisible = position > maxScroll * 0.85;
+    double getOffset(GlobalKey key) {
+      if (key.currentContext == null) return double.infinity;
+      final box = key.currentContext!.findRenderObject() as RenderBox?;
+      if (box == null) return double.infinity;
+      return box.localToGlobal(Offset.zero).dy;
+    }
+
+    final screenHeight = MediaQuery.of(context).size.height;
+    final threshold = screenHeight * 0.4;
+
+    final aboutDy = getOffset(_aboutKey);
+    final projectsDy = getOffset(_projectsKey);
+    final experienceDy = getOffset(_experienceKey);
+    final contactDy = getOffset(_contactKey);
 
     String newActiveSection = 'home';
-    if (contactsVisible) newActiveSection = 'contacts';
-    else if (experienceVisible) newActiveSection = 'experience';
-    else if (projectsVisible) newActiveSection = 'projects';
-    else if (aboutVisible) newActiveSection = 'about';
+    if (contactDy <= threshold) {
+      newActiveSection = 'contacts';
+    } else if (experienceDy <= threshold) {
+      newActiveSection = 'experience';
+    } else if (projectsDy <= threshold) {
+      newActiveSection = 'projects';
+    } else if (aboutDy <= threshold) {
+      newActiveSection = 'about';
+    }
 
-    if (aboutVisible != _isAboutVisible ||
-        projectsVisible != _isProjectsVisible ||
-        experienceVisible != _isExperienceVisible ||
-        contactsVisible != _isContactsVisible ||
-        newActiveSection != _activeSection) {
+    final aboutVis = aboutDy < screenHeight;
+    final projVis = projectsDy < screenHeight;
+    final expVis = experienceDy < screenHeight;
+    final contactVis = contactDy < screenHeight;
+
+    if (newActiveSection != _activeSection ||
+        aboutVis != _isAboutVisible ||
+        projVis != _isProjectsVisible ||
+        expVis != _isExperienceVisible ||
+        contactVis != _isContactsVisible) {
       setState(() {
-        _isAboutVisible = aboutVisible;
-        _isProjectsVisible = projectsVisible;
-        _isExperienceVisible = experienceVisible;
-        _isContactsVisible = contactsVisible;
         _activeSection = newActiveSection;
+        _isAboutVisible = aboutVis;
+        _isProjectsVisible = projVis;
+        _isExperienceVisible = expVis;
+        _isContactsVisible = contactVis;
       });
     }
   }
@@ -416,7 +433,7 @@ class _PortfolioPageState extends State<PortfolioPage>
       key.currentContext!,
       duration: Duration(milliseconds: 500),
       curve: Curves.easeInOut,
-      alignment: 0.35,
+      alignment: 0.0,
     );
     String targetSection = 'home';
     if (key == _homeKey) targetSection = 'home';
@@ -962,10 +979,10 @@ class _HeroContent extends StatelessWidget {
           runSpacing: 16,
           alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
           children: [
-            _HomeSocialIcon(icon: BootstrapIcons.google, label: 'Gmail', url: 'mailto:sidhuxplore4@gmail.com'),
-            _HomeSocialIcon(icon: BootstrapIcons.whatsapp, label: 'WhatsApp', url: 'https://wa.me/919544413854'),
-            _HomeSocialIcon(icon: BootstrapIcons.instagram, label: 'Instagram', url: 'https://instagram.com/_the_realsid_'),
-            _HomeSocialIcon(icon: BootstrapIcons.twitter_x, label: 'X', url: 'https://x.com/SidharthSidu1'),
+            _HomeSocialIcon(vector: SocialVectors.gmail, label: 'Gmail', url: 'mailto:sidhuxplore4@gmail.com'),
+            _HomeSocialIcon(vector: SocialVectors.whatsapp, label: 'WhatsApp', url: 'https://wa.me/919544413854'),
+            _HomeSocialIcon(vector: SocialVectors.instagram, label: 'Instagram', url: 'https://instagram.com/_the_realsid_'),
+            _HomeSocialIcon(vector: SocialVectors.x, label: 'X', url: 'https://x.com/SidharthSidu1'),
           ],
         ),
       ],
@@ -1094,10 +1111,10 @@ class _AvailabilityIndicator extends StatelessWidget {
 }
 
 class _HomeSocialIcon extends StatefulWidget {
-  final dynamic icon;
+  final String vector;
   final String label;
   final String url;
-  _HomeSocialIcon({required this.icon, required this.label, required this.url});
+  _HomeSocialIcon({required this.vector, required this.label, required this.url});
   @override
   State<_HomeSocialIcon> createState() => _HomeSocialIconState();
 }
@@ -1133,8 +1150,15 @@ class _HomeSocialIconState extends State<_HomeSocialIcon> {
                   ? [BoxShadow(color: Color(0xFFF86E5B).withOpacity(0.3), blurRadius: 8, spreadRadius: 1, offset: Offset(0, 2))]
                   : null,
             ),
-            child: Icon(widget.icon,
-                color: _isHovered ? Color(0xFFF86E5B) : Colors.white, size: 22),
+            child: SvgPicture.string(
+              widget.vector,
+              width: 22,
+              height: 22,
+              colorFilter: ColorFilter.mode(
+                _isHovered ? Color(0xFFF86E5B) : Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
           ),
         ),
       ),
@@ -2287,8 +2311,19 @@ class _AdditionalExperienceSection extends StatelessWidget {
     final isMobile = AppDesign.isMobile(context);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: padding, vertical: isMobile ? 40 : 60),
-      child: Column(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: const AssetImage('assets/images/KX11.jpg'),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            Colors.black.withOpacity(0.55),
+            BlendMode.darken,
+          ),
+        ),
+      ),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: padding, vertical: isMobile ? 40 : 60),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // YellowSense Technologies Experience
@@ -2518,8 +2553,9 @@ class _AdditionalExperienceSection extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _ExperienceBullet extends StatelessWidget {
@@ -2691,15 +2727,26 @@ class _ContactContent extends StatelessWidget {
           spacing: 16,
           runSpacing: 16,
           children: [
-            _SocialIcon(icon: BootstrapIcons.github, label: 'GitHub', url: 'https://github.com/RealSid45'),
-            _SocialIcon(icon: BootstrapIcons.linkedin, label: 'LinkedIn', url: 'https://www.linkedin.com/in/sidharth-biju-414273310/'),
-            _SocialIcon(icon: BootstrapIcons.microsoft, label: 'Outlook', url: 'mailto:sidhuxplore4@outlook.com'),
-            _SocialIcon(icon: BootstrapIcons.dribbble, label: 'Dribbble', url: 'https://dribbble.com/'),
+            _SocialIcon(vector: SocialVectors.github, label: 'GitHub', url: 'https://github.com/RealSid45'),
+            _SocialIcon(vector: SocialVectors.linkedin, label: 'LinkedIn', url: 'https://www.linkedin.com/in/sidharth-biju-414273310/'),
+            _SocialIcon(vector: SocialVectors.outlook, label: 'Outlook', url: 'mailto:sidhuxplore4@outlook.com'),
+            _SocialIcon(vector: SocialVectors.dribbble, label: 'Dribbble', url: 'https://dribbble.com/'),
           ],
         ),
       ],
     );
   }
+}
+
+class SocialVectors {
+  static const gmail = '''<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>''';
+  static const whatsapp = '''<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.81 9.81 0 0012.04 2zm5.82 14.12c-.25.7-.85 1.28-1.57 1.54-.7.25-2.22.42-4.14-.38-2.39-.99-3.95-3.41-4.07-3.57-.12-.16-.99-1.32-.99-2.52 0-1.2.62-1.79.85-2.03.22-.24.49-.3.65-.3.16 0 .32.01.46.01.15 0 .35-.06.55.42.21.5.71 1.73.77 1.86.06.13.1.28.02.44-.08.16-.12.26-.24.4-.12.14-.25.31-.36.42-.12.11-.25.24-.11.48.14.24.62 1.02 1.33 1.65.91.81 1.68 1.06 1.92 1.18.24.12.38.1.52-.06.14-.16.6-0.7.76-.94.16-.24.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.19 1.28z"/></svg>''';
+  static const instagram = '''<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>''';
+  static const x = '''<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>''';
+  static const github = '''<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>''';
+  static const linkedin = '''<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>''';
+  static const outlook = '''<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/></svg>''';
+  static const dribbble = '''<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12c6.627 0 12-5.373 12-12S18.627 0 12 0zm8.384 10.364c-.112-.022-2.336-.454-4.885-.11.233-.509.444-1.026.633-1.55 2.196 1.01 4.14 1.616 4.252 1.66zm-5.46-3.238c-.247.67-.53 1.343-.843 2.008-2.368-.868-4.821-1.282-7.291-1.238 1.013-1.66 2.502-2.983 4.296-3.812 1.838 1.031 3.123 2.032 3.838 3.042zm-10.05.908c2.47-.042 4.908.369 7.25 1.229-.265.576-.554 1.157-.866 1.737-3.69-.364-7.252.684-7.398.729A10.01 10.01 0 0 1 4.874 8.034zm-1.015 6.131c.174-.052 3.239-1.012 6.848-.684.824 2.22 1.258 4.542 1.286 6.892a9.982 9.982 0 0 1-8.134-6.208zm9.897 6.071c-.027-2.28-.448-4.529-1.251-6.685 2.453-.331 4.58.077 4.686.098a9.981 9.981 0 0 1-3.435 6.587z"/></svg>''';
 }
 
 class _ContactField extends StatelessWidget {
@@ -2731,30 +2778,53 @@ class _ContactField extends StatelessWidget {
   }
 }
 
-class _SocialIcon extends StatelessWidget {
-  final dynamic icon;
+class _SocialIcon extends StatefulWidget {
+  final String vector;
   final String label;
   final String url;
-  _SocialIcon({required this.icon, required this.label, required this.url});
+  _SocialIcon({required this.vector, required this.label, required this.url});
+  @override
+  State<_SocialIcon> createState() => _SocialIconState();
+}
+
+class _SocialIconState extends State<_SocialIcon> {
+  bool _isHovered = false;
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: label,
+      message: widget.label,
       child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: () async {
-            final uri = Uri.parse(url);
+            final uri = Uri.parse(widget.url);
             if (await canLaunchUrl(uri)) await launchUrl(uri);
           },
-          child: Container(
-            padding: EdgeInsets.all(14),
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 200),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+              border: Border.all(
+                color: _isHovered ? AppDesign.primary : Colors.white.withOpacity(0.2),
+                width: _isHovered ? 1.5 : 1,
+              ),
+              boxShadow: _isHovered
+                  ? [BoxShadow(color: AppDesign.primary.withOpacity(0.3), blurRadius: 8, spreadRadius: 1, offset: Offset(0, 2))]
+                  : null,
             ),
-            child: Icon(icon, color: Colors.white, size: 24),
+            child: SvgPicture.string(
+              widget.vector,
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                _isHovered ? AppDesign.primary : Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
           ),
         ),
       ),
