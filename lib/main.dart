@@ -784,191 +784,8 @@ class _PortfolioPageState extends State<PortfolioPage>
   }
 
   Widget _buildAdditionalExperienceSection() {
-    return RepaintBoundary(
-      child: AnimatedContainer(
-        duration: AppDesign.mediumDuration,
-        curve: AppDesign.defaultCurve,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/images/KX11.jpg"),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.4),
-              BlendMode.darken,
-              ),
-          ),
-        ),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 80, vertical: 60),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                margin: EdgeInsets.only(bottom: 30),
-                padding: EdgeInsets.all(30),
-                decoration: BoxDecoration(
-                  color: Color(0xFF1A1F3A).withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Color(0xFF2A2F4A), width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0xFFF86E5B).withOpacity(0.1),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Live Project - POS by ORAVCO',
-                                style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white)),
-                            SizedBox(height: 4),
-                            Text('ORAVCO Private Limited',
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    color: Color(0xFFF86E5B),
-                                    fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFFF86E5B), Color(0xFF924136)],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text('Dec 2025',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600)),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 25),
-                    Divider(color: Colors.white.withOpacity(0.2), height: 1),
-                    SizedBox(height: 25),
-                    Text(
-                      'Successfully completed a Live Project titled "POS by ORAVCO" from 01/12/2025 to 06/12/2025',
-                      style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.white.withOpacity(0.9),
-                          fontStyle: FontStyle.italic,
-                          height: 1.6),
-                    ),
-                    SizedBox(height: 30),
-                    Text('Key Contributions:',
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500)),
-                    SizedBox(height: 20),
-                    Column(
-                      children: [
-                        _AdditionalExperienceBullet('Integrated developed APIs into the client Application built with Flutter'),
-                        SizedBox(height: 12),
-                        _AdditionalExperienceBullet('Collaborated with the team to deliver project outcomes within timelines'),
-                        SizedBox(height: 12),
-                        _AdditionalExperienceBullet('Effectively contributed to the successful completion of the project'),
-                      ],
-                    ),
-                    SizedBox(height: 30),
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF0A0E27).withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: Color(0xFFF86E5B).withOpacity(0.3), width: 1),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Certificate Excerpt:',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xFFF86E5B),
-                                  fontWeight: FontWeight.w600)),
-                          SizedBox(height: 10),
-                          Text(
-                            '"We found him to be hardworking, dedicated, proactive, and a keen learner, who contributed effectively to the successful completion of the project."',
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white.withOpacity(0.8),
-                                fontStyle: FontStyle.italic,
-                                height: 1.6),
-                          ),
-                          SizedBox(height: 10),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Text('- ORAVCO Private Limited',
-                                style: TextStyle(
-                                    fontSize: 14, color: Colors.white70)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 30),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        _ExperienceSkillChip('Flutter'),
-                        _ExperienceSkillChip('API Integration'),
-                        _ExperienceSkillChip('Team Collaboration'),
-                        _ExperienceSkillChip('Project Delivery'),
-                        _ExperienceSkillChip('Problem Solving'),
-                        _ExperienceSkillChip('Time Management'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Center(
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => setState(() => _showAdditionalExperiences = false),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Color(0xFFF86E5B), width: 2),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.arrow_upward, color: Color(0xFFF86E5B), size: 20),
-                          SizedBox(width: 12),
-                          Text('Show Less Experiences',
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  color: Color(0xFFF86E5B),
-                                  fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return _AdditionalExperienceSection(
+      onShowLessPressed: () => setState(() => _showAdditionalExperiences = false),
     );
   }
 
@@ -2363,12 +2180,15 @@ class _ExperienceContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 16,
+                  runSpacing: 12,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: const [
                         Text('Flutter Developer Intern',
                             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
                         SizedBox(height: 4),
@@ -2382,7 +2202,7 @@ class _ExperienceContent extends StatelessWidget {
                         gradient: LinearGradient(colors: [Color(0xFFF86E5B), Color(0xFF924136)], begin: Alignment.centerLeft, end: Alignment.centerRight),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text('2025 - Present',
+                      child: Text('July 2025 - Feb 2026',
                           style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600)),
                     ),
                   ],
@@ -2390,10 +2210,7 @@ class _ExperienceContent extends StatelessWidget {
                 SizedBox(height: 25),
                 Divider(color: Colors.white.withOpacity(0.2), height: 1),
                 SizedBox(height: 25),
-                Text('Reflection of what I\'ve been doing so far, so long.',
-                    style: TextStyle(fontSize: 20, color: Colors.white.withOpacity(0.9), fontStyle: FontStyle.italic, height: 1.6)),
-                SizedBox(height: 30),
-                Text('As a Flutter Developer Intern at Luminar Technolab, I\'m actively involved in:',
+                Text('As a Flutter Developer Intern at Luminar Technolab, I was actively involved in:',
                     style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500)),
                 SizedBox(height: 20),
                 Column(
@@ -2441,7 +2258,7 @@ class _ExperienceContent extends StatelessWidget {
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: [
+                      children: const [
                         Text('View More Experiences',
                             style: TextStyle(fontSize: 18, color: Color(0xFFF86E5B), fontWeight: FontWeight.w500)),
                         SizedBox(width: 12),
@@ -2459,22 +2276,248 @@ class _ExperienceContent extends StatelessWidget {
   }
 }
 
-class _AdditionalExperienceBullet extends StatelessWidget {
-  final String text;
-  _AdditionalExperienceBullet(this.text);
+class _AdditionalExperienceSection extends StatelessWidget {
+  final VoidCallback onShowLessPressed;
+
+  const _AdditionalExperienceSection({Key? key, required this.onShowLessPressed}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-            margin: EdgeInsets.only(top: 6),
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: Color(0xFFF86E5B))),
-        SizedBox(width: 16),
-        Expanded(child: Text(text, style: TextStyle(fontSize: 17, color: Colors.white.withOpacity(0.8), height: 1.5))),
-      ],
+    final padding = AppDesign.responsivePadding(context);
+    final isMobile = AppDesign.isMobile(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: isMobile ? 40 : 60),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // YellowSense Technologies Experience
+          Container(
+            margin: const EdgeInsets.only(bottom: 30),
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              color: AppDesign.surfaceDark.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppDesign.surfaceLight, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: AppDesign.primary.withOpacity(0.1),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 16,
+                  runSpacing: 12,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text('Flutter Developer Intern',
+                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+                        SizedBox(height: 4),
+                        Text('YellowSense Technologies',
+                            style: TextStyle(fontSize: 18, color: AppDesign.primary, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppDesign.primary, AppDesign.secondary],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text('Mar 2026 - May 2026',
+                          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 25),
+                Divider(color: Colors.white.withOpacity(0.2), height: 1),
+                const SizedBox(height: 25),
+                Text(
+                  'Contributed to the development of cross-platform mobile applications with a focus on efficiency and modern development techniques.',
+                  style: TextStyle(fontSize: 20, color: Colors.white.withOpacity(0.9), fontStyle: FontStyle.italic, height: 1.6),
+                ),
+                const SizedBox(height: 30),
+                const Text('Key Contributions & Skills:',
+                    style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 20),
+                Column(
+                  children: [
+                    _ExperienceBullet('Developing cross-platform applications using the Flutter framework'),
+                    SizedBox(height: 12),
+                    _ExperienceBullet('Leveraging AI Prompting techniques to accelerate development and problem-solving'),
+                    SizedBox(height: 12),
+                    _ExperienceBullet('Worked sincerely and responsibly on assigned tasks and projects during the tenure'),
+                    SizedBox(height: 12),
+                    _ExperienceBullet('Collaborated with the team to contribute effectively to organization goals'),
+                  ],
+                ),
+                const SizedBox(height: 30),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _ExperienceSkillChip('Flutter'),
+                    _ExperienceSkillChip('AI Prompting'),
+                    _ExperienceSkillChip('Dart'),
+                    _ExperienceSkillChip('Team Collaboration'),
+                    _ExperienceSkillChip('Project Management'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // POS by ORAVCO Experience
+          Container(
+            margin: const EdgeInsets.only(bottom: 30),
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              color: AppDesign.surfaceDark.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppDesign.surfaceLight, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: AppDesign.primary.withOpacity(0.1),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 16,
+                  runSpacing: 12,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text('Live Project - POS by ORAVCO',
+                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+                        SizedBox(height: 4),
+                        Text('ORAVCO Private Limited',
+                            style: TextStyle(fontSize: 18, color: AppDesign.primary, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppDesign.primary, AppDesign.secondary],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text('Dec 2025',
+                          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 25),
+                Divider(color: Colors.white.withOpacity(0.2), height: 1),
+                const SizedBox(height: 25),
+                Text(
+                  'Successfully completed a Live Project titled "POS by ORAVCO" from 01/12/2025 to 06/12/2025',
+                  style: TextStyle(fontSize: 20, color: Colors.white.withOpacity(0.9), fontStyle: FontStyle.italic, height: 1.6),
+                ),
+                const SizedBox(height: 30),
+                const Text('Key Contributions:',
+                    style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 20),
+                Column(
+                  children: [
+                    _ExperienceBullet('Integrated developed APIs into the client Application built with Flutter'),
+                    SizedBox(height: 12),
+                    _ExperienceBullet('Collaborated with the team to deliver project outcomes within timelines'),
+                    SizedBox(height: 12),
+                    _ExperienceBullet('Effectively contributed to the successful completion of the project'),
+                  ],
+                ),
+                const SizedBox(height: 30),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppDesign.backgroundDark.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppDesign.primary.withOpacity(0.3), width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Certificate Excerpt:',
+                          style: TextStyle(fontSize: 16, color: AppDesign.primary, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 10),
+                      Text(
+                        '"We found him to be hardworking, dedicated, proactive, and a keen learner, who contributed effectively to the successful completion of the project."',
+                        style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.8), fontStyle: FontStyle.italic, height: 1.6),
+                      ),
+                      const SizedBox(height: 10),
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Text('- ORAVCO Private Limited',
+                            style: TextStyle(fontSize: 14, color: Colors.white70)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _ExperienceSkillChip('Flutter'),
+                    _ExperienceSkillChip('API Integration'),
+                    _ExperienceSkillChip('Team Collaboration'),
+                    _ExperienceSkillChip('Project Delivery'),
+                    _ExperienceSkillChip('Problem Solving'),
+                    _ExperienceSkillChip('Time Management'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Center(
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: onShowLessPressed,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppDesign.primary, width: 2),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.arrow_upward, color: AppDesign.primary, size: 20),
+                      SizedBox(width: 12),
+                      Text('Show Less Experiences',
+                          style: TextStyle(fontSize: 18, color: AppDesign.primary, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,34 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:bootstrap_icons/bootstrap_icons.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import '../constants/app_assets.dart';
-
-class ProjectModel {
-  final String title;
-  final String description;
-  final String imageUrl;
-  final List<String> tags;
-
-  ProjectModel({
-    required this.title,
-    required this.description,
-    required this.imageUrl,
-    required this.tags,
-  });
-}
-
-class SocialModel {
-  final IconData icon;
-  final String label;
-  final String url;
-
-  SocialModel({
-    required this.icon,
-    required this.label,
-    required this.url,
-  });
-}
+import 'package:sid_portfolio/constants/app_assets.dart';
+import 'package:sid_portfolio/data/project_model.dart';
+import 'package:sid_portfolio/data/social_model.dart';
 
 class PortfolioData {
   static const String resumeDriveId = '1L6HrWjoj4RH5CSddjPsDUSGQfHoBNCKs';
@@ -38,71 +12,76 @@ class PortfolioData {
     "Dart", "Flutter", "Provider", "GetX", "BLoC", "Riverpod",
     "sqflite", "Hive", "Figma", "Cursor", "Firebase", "REST API",
     "Git / GitHub", "Dependency Injection", "Payment Integration",
-    "MVVM", "Responsive Design",
+    "MVVM", "Responsive Design", "AI Prompting",
   ];
 
   static final List<ProjectModel> projects = [
-    ProjectModel(
+    const ProjectModel(
       title: 'Nike App Clone',
       description: 'Nike Clone – Clone Of The Official Nike Store',
       imageUrl: AppAssets.projectNike,
-      tags: ['Flutter'],
+      tags: ['Flutter', 'Firebase'],
     ),
-    ProjectModel(
+    const ProjectModel(
       title: 'Rivio',
       description: 'Track daily routines with charts & filters',
       imageUrl: AppAssets.projectRivio,
-      tags: ['Flutter', 'Figma', 'Firebase'],
+      extraImages: [
+        AppAssets.projectRivio2,
+        AppAssets.projectRivio3,
+      ],
+      tags: ['Flutter', 'Figma', 'Firebase', 'Supabase'],
+      playStoreUrl: 'https://play.google.com/store/apps/details?id=com.rivioapp.rivio',
     ),
-    ProjectModel(
-      title: 'SnackSnap',
-      description: 'Modern UI design exploration',
-      imageUrl: AppAssets.projectSnackSnap,
-      tags: ['Figma'],
+    const ProjectModel(
+      title: 'Nomad',
+      description: 'Plan together. Travel better.',
+      imageUrl: AppAssets.projectNomad,
+      tags: ['Flutter', 'Figma', 'Firebase'],
     ),
   ];
 
   static final List<SocialModel> homeSocials = [
-    SocialModel(
-      icon: Icons.alternate_email,
+    const SocialModel(
+      icon: BootstrapIcons.google,
       label: 'Gmail',
       url: 'mailto:sidhuxplore4@gmail.com',
     ),
-    SocialModel(
-      icon: FontAwesomeIcons.whatsapp,
+    const SocialModel(
+      icon: BootstrapIcons.whatsapp,
       label: 'WhatsApp',
       url: 'https://wa.me/919544413854',
     ),
-    SocialModel(
-      icon: FontAwesomeIcons.instagram,
+    const SocialModel(
+      icon: BootstrapIcons.instagram,
       label: 'Instagram',
       url: 'https://instagram.com/_the_realsid_',
     ),
-    SocialModel(
-      icon: FontAwesomeIcons.xTwitter,
+    const SocialModel(
+      icon: BootstrapIcons.twitter_x,
       label: 'X',
       url: 'https://x.com/SidharthSidu1',
     ),
   ];
 
   static final List<SocialModel> contactSocials = [
-    SocialModel(
-      icon: FontAwesomeIcons.github,
+    const SocialModel(
+      icon: BootstrapIcons.github,
       label: 'GitHub',
       url: 'https://github.com/RealSid45',
     ),
-    SocialModel(
-      icon: FontAwesomeIcons.linkedin,
+    const SocialModel(
+      icon: BootstrapIcons.linkedin,
       label: 'LinkedIn',
       url: 'https://www.linkedin.com/in/sidharth-biju-414273310/',
     ),
-    SocialModel(
-      icon: Icons.email_outlined,
-      label: 'Email',
+    const SocialModel(
+      icon: BootstrapIcons.microsoft,
+      label: 'Outlook',
       url: 'mailto:sidhuxplore4@outlook.com',
     ),
-    SocialModel(
-      icon: FontAwesomeIcons.dribbble,
+    const SocialModel(
+      icon: BootstrapIcons.dribbble,
       label: 'Dribbble',
       url: 'https://dribbble.com/',
     ),
